@@ -1,0 +1,196 @@
+:root {
+    --primary1: #F9F9F9;
+    --primary2: #FFFFFF;
+    --primary3: #F5F5F5;
+    --theme-bold-sky: #3A7BD5;
+    --emerald-leave: #2ECC71;
+    --main-bust-theme: #B0B0B0;
+    --overwhelming: #A29BFE;
+    --goldie: #F1C40F; 
+    --dangerous-red: #E74C3C;
+
+}
+
+/* 
+Minimal & Modern → White + Cool Blue + Gray
+
+Fresh & Energetic → White + Emerald Green + Light Gray
+
+Elegant & Premium → White + Muted Gold + Charcoal Gray
+
+Playful & Friendly → White + Soft Lavender + Sky Blue
+
+ Pro Tip: Keep white as your dominant background, then use one strong accent color for CTAs (buttons, highlights) and one neutral tone for text/icons. This ensures clarity and avoids visual clutter.
+
+*/
+
+body {
+    display: block;
+    margin: 0;
+    padding: 0;
+    /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
+    font-family: 'Poppins', sans-serif;
+}
+
+#root {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 48px 20px;
+    /* background: linear-gradient(180deg, #FBFDFF 0%, #FFFFFF 100%); */
+    box-sizing: border-box;
+}
+
+#root .App-structure {
+    width: 720px;
+    max-width: 100%;
+    background: linear-gradient(180deg, var(--primary2), var(--primary3));
+    border-radius: 14px;
+    padding: 22px;
+    border: 1px solid rgba(58,123,213,0.06);
+    box-shadow: 0 12px 30px rgba(2,6,23,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+
+#root .App-structure:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px rgba(2,6,23,0.08);
+}
+
+#root .App-structure .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#root .App-structure h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0F172A;
+}
+
+/* Input row */
+#root .App-structure .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#root .App-structure input[type="text"] {
+    flex: 1;
+    padding: 12px 14px;
+    border: 1px solid var(--main-bust-theme);
+    border-radius: 10px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+
+#root .App-structure input[type="text"]:focus {
+    border-color: var(--theme-bold-sky);
+    box-shadow: 0 6px 20px rgba(58,123,213,0.08);
+}
+
+#root .App-structure button#add-task-button {
+    padding: 11px 18px;
+    background: var(--theme-bold-sky);
+    color: var(--primary2);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform .12s ease, box-shadow .12s ease;
+    box-shadow: 0 8px 22px rgba(58,123,213,0.12);
+}
+
+#root .App-structure button#add-task-button:hover {
+    transform: translateY(-2px);
+}
+
+/* Tasks list */
+#root .App-structure .list-of-tasks-more {
+    max-height: 320px;
+    overflow-y: auto;
+    margin-top: 6px;
+    border-top: 1px solid var(--main-bust-theme);
+    padding-top: 8px;
+}
+
+#root .App-structure .list-of-tasks-more::-webkit-scrollbar { width: 8px; }
+#root .App-structure .list-of-tasks-more::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 6px; }
+
+#root .App-structure .list-of-tasks-more ul { padding: 0; margin: 0; }
+
+#root .App-structure .list-of-tasks-more ul li {
+    list-style-type: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    margin: 8px 0;
+    border-radius: 8px;
+    background: linear-gradient(90deg, rgba(58,123,213,0.06), rgba(11,97,176,0.02));
+    border: 1px solid rgba(2,6,23,0.03);
+    transition: transform .12s ease, box-shadow .12s ease;
+    color: #0B1220;
+    font-weight: 500;
+}
+
+#root .App-structure .list-of-tasks-more ul li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(2,6,23,0.06);
+}
+
+#root .task-completed {
+    text-decoration: line-through;
+    opacity: 0.6;
+    color: #6b7280; /* gray-500 */
+    transition: opacity .12s ease, color .12s ease;
+}
+
+#root .App-structure .list-of-tasks-more ul li button {
+    background: var(--dangerous-red);
+    border: none;
+    padding: 8px 10px;
+    color: var(--primary2);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+/* Small utility lists (pills) */
+#root .App-structure ul { display:flex; gap:8px; padding:0; margin: 12px 0; flex-wrap: wrap; }
+#root .App-structure ul li { width: fit-content; }
+#root .App-structure ul li button { padding: 8px 14px; font-weight: 700; background: var(--emerald-leave); border-radius: 8px; box-shadow: 0 6px 18px rgba(162,155,254,0.08); }
+
+/* Options */
+#root .App-structure .options-list { display:flex; gap: 10px; justify-content: flex-start; flex-wrap: wrap; }
+#root .App-structure .options-list .option { padding: 8px 14px; border-radius: 999px; border: none; cursor: pointer; background: var(--emerald-leave); color: var(--primary2); box-shadow: none; }
+#root .App-structure .options-list .option-active { background: var(--theme-bold-sky); box-shadow: 0 8px 26px rgba(58,123,213,0.10); }
+
+/* Option content */
+#root .App-structure .option-content { margin-top: 8px; }
+
+/* Exit */
+#root .App-structure #exit-button { padding: 8px 12px; background: transparent; border: 1px solid rgba(58,123,213,0.14); color: var(--theme-bold-sky); border-radius: 8px; cursor: pointer; transition: transform .12s, background .12s, color .12s; }
+#root .App-structure #exit-button:hover { background: var(--theme-bold-sky); color: var(--primary2); transform: translateY(-2px); }
+
+/* Focus accessibility */
+#root .App-structure button:focus, #root .App-structure input:focus { outline: 3px solid rgba(58,123,213,0.12); outline-offset: 2px; }
+
+/* Responsive */
+@media (max-width: 700px) {
+    #root { padding: 28px 12px; }
+    #root .App-structure { width: 96%; padding: 16px; }
+    #root .App-structure .input-row { flex-direction: column; align-items: stretch; }
+    #root .App-structure button#add-task-button { width: 100%; }
+    #root .App-structure .options-list { justify-content: center; }
+    #root .App-structure h2 { font-size: 1.05rem; }
+}
+
