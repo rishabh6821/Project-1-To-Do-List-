@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
-import './App.css';
+import './index-DESKTOP-8LU0NJT.css';
+import './App-DESKTOP-8LU0NJT.css';
 import Snowfall from 'react-snowfall';
-import SelectOption from './options.jsx';
+import SelectOption from './options-DESKTOP-8LU0NJT.jsx';
 
 let primary1 = getComputedStyle(document.documentElement).getPropertyValue('--primary1');
 let primary2 = getComputedStyle(document.documentElement).getPropertyValue('--primary2');
