@@ -1,14 +1,20 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index-DESKTOP-8LU0NJT.css';
-import './App-DESKTOP-8LU0NJT.css';
+import './index.css';
+import './App.css';
 import Snowfall from 'react-snowfall';
-import SelectOption from './options-DESKTOP-8LU0NJT.jsx';
+import SelectOption from './Options.jsx';
 
-let primary1 = getComputedStyle(document.documentElement).getPropertyValue('--primary1');
-let primary2 = getComputedStyle(document.documentElement).getPropertyValue('--primary2');
-let primary3 = getComputedStyle(document.documentElement).getPropertyValue('--primary3');
-let masterOfBuster = getComputedStyle(document.documentElement).getPropertyValue('--main-bust-theme');
+// Get CSS variables with fallback values
+const getCSSVariable = (varName, fallback) => {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  return value || fallback;
+};
+
+let primary1 = getCSSVariable('--primary1', '#F9F9F9');
+let primary2 = getCSSVariable('--primary2', '#FFFFFF');
+let primary3 = getCSSVariable('--primary3', '#F5F5F5');
+let masterOfBuster = getCSSVariable('--main-bust-theme', '#B0B0B0');
 
 let colorOptionsSnowfall = {
     // bg: ['#38320d', '#12c986', '#1e3a8a', '#6b21a8', '#be185d'],
