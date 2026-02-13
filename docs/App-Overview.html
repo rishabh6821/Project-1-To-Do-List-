@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>To Do List App — Overview</title>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;max-width:900px;margin:32px auto;color:#111}
+      pre{background:#f6f8fa;padding:12px;border-radius:6px;overflow:auto}
+      h1,h2,h3{color:#0b3a66}
+      hr{border:none;border-top:1px solid #eee;margin:24px 0}
+      .kbd{background:#eee;padding:2px 6px;border-radius:4px;font-family:monospace}
+    </style>
+  </head>
+  <body>
+    <h1>To Do List App — Overview</h1>
+    <p>This document explains the app structure, logic, storage, backend behavior, and how to run and test the project.</p>
+    <hr />
+    <h2>Project layout (important files)</h2>
+    <ul>
+      <li><strong>index.html</strong> / <strong>dist/index.html</strong> — App entry HTML.</li>
+      <li><strong>src/main.jsx</strong> — React mount point.</li>
+      <li><strong>src/Options.jsx</strong> — Main logic: users, tasks, storage, admin view.</li>
+      <li><strong>src/App.jsx</strong> — To Do UI for incomplete tasks.</li>
+      <li><strong>src/Completed.jsx</strong> — Completed tasks UI.</li>
+      <li><strong>src/AllWorks.jsx</strong> — All tasks listing.</li>
+      <li><strong>api/tasks.js</strong> — Serverless API handler (demo).</li>
+    </ul>
+    <hr />
+    <h2>High-level behavior</h2>
+    <p><strong>Authentication & users</strong></p>
+    <ul>
+      <li>Users stored in <code>localStorage</code> under <code>todo.users</code>.</li>
+      <li>Admin user auto-created if missing (Admin / admin123).</li>
+      <li>Logged-in user saved as <code>todo.currentUser</code> for session restore.</li>
+      <li>Password changes update <code>todo.users</code> client-side.</li>
+    </ul>
+    <p><strong>Tasks</strong></p>
+    <ul>
+      <li>Per-user tasks stored at <code>todo.tasks.&lt;username&gt;</code> in <code>localStorage</code>.</li>
+      <li>Import/export available (File System Access API or JSON download/upload).</li>
+    </ul>
+    <p><strong>Task operations</strong> — <code>addTask()</code>, <code>removeTask()</code>, <code>toggleComplete()</code> update React state and persist to <code>localStorage</code>.</p>
+    <hr />
+    <h2>Backend (api/tasks.js)</h2>
+    <p>This demo serverless handler exposes REST endpoints for tasks. It uses an in-memory store and optionally writes to <code>data/tasks.json</code> locally. Note: serverless file storage is ephemeral.</p>
+    <hr />
+    <h2>Security notes</h2>
+    <ul>
+      <li>Passwords currently stored in plaintext in <code>localStorage</code> — not secure.</li>
+      <li>Consider moving authentication and tasks to a secure backend with hashed passwords and a proper DB.</li>
+    </ul>
+    <hr />
+    <h2>Run locally</h2>
+    <pre>npm install
+npm run dev
+
+# build
+npm run build
+npm run preview</pre>
+    <hr />
+    <h2>Convert to PDF</h2>
+    <p>Options: <strong>Pandoc</strong>, <strong>Chrome print</strong>, or <strong>wkhtmltopdf</strong>. See <code>docs/App-Overview.md</code> for full commands.</p>
+    <hr />
+    <h2>Next improvements</h2>
+    <ul>
+      <li>Backend with hashed passwords and DB persistence.</li>
+      <li>Secure sessions and better UX.</li>
+    </ul>
+    <hr />
+    <p>Questions or want me to generate a PDF here? I can try converting it if you allow installing a converter or using headless Chrome.</p>
+  </body>
+</html>

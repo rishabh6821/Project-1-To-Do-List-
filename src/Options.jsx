@@ -25,12 +25,31 @@ function SelectOption() {
   const [inputValue, setInputValue] = useState("");
   const [tasks, setTasks] = useState([]);
   const [allUsersTasks, setAllUsersTasks] = useState({});
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [oldPasswordInput, setOldPasswordInput] = useState("");
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
 
   // Load users on mount
   useEffect(() => {
     try {
       const storedUsers = JSON.parse(localStorage.getItem('todo.users') || '[]');
       setAllUsers(storedUsers);
+      // Restore session if user was previously logged in
+      try {
+        const storedCurrent = localStorage.getItem('todo.currentUser');
+        if (storedCurrent) {
+          const found = storedUsers.find(u => u.name === storedCurrent);
+          if (found) {
+            setCurrentUser(found.name);
+            setIsLoggedIn(true);
+            setIsAdmin(found.isAdmin || false);
+            Notify(`Welcome back ${found.name}!`, 'info');
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to restore session from localStorage', e);
+      }
       
       // Initialize admin user if not exists
       if (!storedUsers.find(u => u.isAdmin)) {
@@ -48,19 +67,15 @@ function SelectOption() {
   // Load all users' tasks when logged in as admin
   useEffect(() => {
     if (!isAdmin || !isLoggedIn) return;
-    
+
     const allTasks = {};
     allUsers.forEach(user => {
       if (!user.isAdmin) {
         try {
           const raw = localStorage.getItem(`todo.tasks.${user.name}`);
-          if (raw) {
-            allTasks[user.name] = JSON.parse(raw);
-          } else {
-            allTasks[user.name] = [];
-          }
+          allTasks[user.name] = raw ? JSON.parse(raw) : [];
         } catch (e) {
-          console.warn(`Failed to load tasks for ${user.name}`, e);
+          console.warn(`Failed to load tasks for ${user.name} from localStorage`, e);
           allTasks[user.name] = [];
         }
       }
@@ -75,6 +90,7 @@ function SelectOption() {
     setCurrentUser(user.name);
     setIsLoggedIn(true);
     setIsAdmin(user.isAdmin || false);
+    try { localStorage.setItem('todo.currentUser', user.name); } catch (e) { console.warn('Failed to persist session', e); }
     setLoginUsername("");
     setLoginPassword("");
     Notify(`Welcome ${user.name}!`, 'success');
@@ -102,27 +118,39 @@ function SelectOption() {
     setSelectedIndex(null);
     setInputValue("");
     setTasks([]);
+    try { localStorage.removeItem('todo.currentUser'); } catch (e) { console.warn('Failed to clear persisted session', e); }
     Notify('Logged out successfully', 'info');
+  }
+
+  function changePassword() {
+    if (!currentUser) return Notify('No user logged in', 'error');
+    if (!oldPasswordInput) return Notify('Enter current password', 'error');
+    if (!newPasswordInput) return Notify('Enter a new password', 'error');
+    if (newPasswordInput !== confirmPasswordInput) return Notify('New passwords do not match', 'error');
+
+    const idx = allUsers.findIndex(u => u.name === currentUser);
+    if (idx === -1) return Notify('User not found', 'error');
+    const user = allUsers[idx];
+    if (user.password !== oldPasswordInput) return Notify('Current password is incorrect', 'error');
+
+    const updatedUsers = [...allUsers];
+    updatedUsers[idx] = { ...user, password: newPasswordInput };
+    setAllUsers(updatedUsers);
+    try { localStorage.setItem('todo.users', JSON.stringify(updatedUsers)); } catch (e) { console.warn('Failed to persist new password', e); }
+
+    setShowChangePwd(false);
+    setOldPasswordInput("");
+    setNewPasswordInput("");
+    setConfirmPasswordInput("");
+    Notify('Password changed successfully', 'success');
   }
 
   // Load regular user tasks when logged in
   useEffect(() => {
     if (!isLoggedIn || isAdmin || !currentUser) return;
-    
-    let mounted = true;
-    async function load() {
-      try {
-        const res = await fetch(`/api/tasks?user=${encodeURIComponent(currentUser)}`);
-        if (!res.ok) throw new Error('Server unavailable');
-        const data = await res.json();
-        if (mounted && Array.isArray(data)) {
-          setTasks(data);
-          return;
-        }
-      } catch (err) {
-        console.info('Could not fetch tasks from API, using local storage fallback', err);
-      }
 
+    let mounted = true;
+    function loadLocal() {
       try {
         const raw = localStorage.getItem(`todo.tasks.${currentUser}`);
         if (raw) {
@@ -133,100 +161,119 @@ function SelectOption() {
               id: t.id || `t${currentUser}${idx}${Date.now()}`
             }));
             setTasks(tasksWithIds);
+            return;
           }
-        } else {
-          setTasks([]);
         }
       } catch (e) {
         console.warn('Failed to load tasks from localStorage', e);
-        setTasks([]);
       }
+      if (mounted) setTasks([]);
     }
 
-    load();
+    loadLocal();
     return () => { mounted = false; };
   }, [isLoggedIn, isAdmin, currentUser]);
 
-  // Save user tasks to localStorage whenever tasks change
-  useEffect(() => {
-    if (!currentUser || isAdmin) return;
+  // Provide functions to export/import tasks to/from the user's device
+  async function exportTasksToDevice() {
+    if (!currentUser) return Notify('No user selected', 'error');
+    const data = JSON.stringify(tasks, null, 2);
     try {
-      localStorage.setItem(`todo.tasks.${currentUser}`, JSON.stringify(tasks));
-    } catch (e) {
-      console.warn('Failed to save tasks to localStorage', e);
-    }
-  }, [tasks, currentUser, isAdmin]);
+      if (window.showSaveFilePicker) {
+        const opts = {
+          types: [
+            {
+              description: 'JSON Files',
+              accept: { 'application/json': ['.json'] }
+            }
+          ]
+        };
+        const handle = await window.showSaveFilePicker(opts);
+        const writable = await handle.createWritable();
+        await writable.write(data);
+        await writable.close();
+        Notify('Tasks saved to device', 'success');
+        return;
+      }
 
-  async function addTask() {
+      // Fallback: trigger a download
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentUser || 'tasks'}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      Notify('Tasks downloaded', 'success');
+    } catch (e) {
+      console.warn('Export failed', e);
+      Notify('Failed to save tasks to device', 'error');
+    }
+  }
+
+  async function importTasksFromDevice() {
+    if (!currentUser) return Notify('No user selected', 'error');
+    try {
+      let file;
+      if (window.showOpenFilePicker) {
+        const [handle] = await window.showOpenFilePicker({ types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }] });
+        file = await handle.getFile();
+      } else {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.click();
+        file = await new Promise((resolve) => { input.onchange = () => resolve(input.files[0]); });
+      }
+
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed)) return Notify('Invalid tasks file', 'error');
+      const tasksWithIds = parsed.map((t, idx) => ({ ...t, id: t.id || `t${Date.now()}${idx}` }));
+      setTasks(tasksWithIds);
+      Notify('Tasks imported from device', 'success');
+    } catch (e) {
+      console.warn('Import failed', e);
+      Notify('Import cancelled or failed', 'error');
+    }
+  }
+
+  function addTask() {
     const val = inputValue.trim();
     if (!val) return Notify('Enter a task', 'error');
 
-    // Create task with proper ID
-    const temp = { id: `t${Date.now()}`, text: val, completed: false };
-    setTasks(prev => [...prev, temp]);
+    const newTask = { id: `t${Date.now()}`, text: val, completed: false };
+    setTasks(prev => {
+      const next = [...prev, newTask];
+      try { localStorage.setItem(`todo.tasks.${currentUser}`, JSON.stringify(next)); } catch (e) { console.warn('Failed to save tasks', e); }
+      return next;
+    });
     setInputValue("");
-
-    try {
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: val, user: currentUser })
-      });
-
-      if (!res.ok) throw new Error('Failed to save');
-      const saved = await res.json();
-      setTasks(prev => prev.map(t => (t.id === temp.id ? { ...saved, id: saved.id || temp.id } : t)));
-      Notify('Task added successfully!', 'success');
-    } catch (e) {
-      Notify('Task added locally', 'info');
-      console.warn('Add task to server failed', e);
-    }
+    Notify('Task added', 'success');
   }
 
 
-  async function removeTask(taskId) {
+  function removeTask(taskId) {
     if (!taskId) return Notify('Invalid task', 'error');
-
-    const previous = [...tasks];
-    setTasks(prev => prev.filter(t => t.id !== taskId));
-
-    try {
-      const res = await fetch(`/api/tasks/${taskId}`, { 
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: currentUser })
-      });
-      if (!res.ok) throw new Error('Delete failed');
-      Notify('Task removed!', 'success');
-    } catch (e) {
-      setTasks(previous);
-      Notify('Task removed locally', 'info');
-      console.warn('Remove failed', e);
-    }
+    setTasks(prev => {
+      const next = prev.filter(t => t.id !== taskId);
+      try { localStorage.setItem(`todo.tasks.${currentUser}`, JSON.stringify(next)); } catch (e) { console.warn('Failed to save after remove', e); }
+      return next;
+    });
+    Notify('Task removed', 'success');
   }
 
-  async function toggleComplete(taskId) {
+  function toggleComplete(taskId) {
     if (!taskId) return Notify('Invalid task', 'error');
-
+    setTasks(prev => {
+      const next = prev.map(t => (t.id === taskId ? { ...t, completed: !t.completed } : t));
+      try { localStorage.setItem(`todo.tasks.${currentUser}`, JSON.stringify(next)); } catch (e) { console.warn('Failed to save after toggle', e); }
+      return next;
+    });
     const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    const previous = [...tasks];
-    setTasks(prev => prev.map(t => (t.id === taskId ? { ...t, completed: !t.completed } : t)));
-
-    try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed: !task.completed, user: currentUser })
-      });
-      if (!res.ok) throw new Error('Update failed');
-      Notify(task.completed ? 'Marked as incomplete!' : 'Marked as complete!', 'success');
-    } catch (e) {
-      setTasks(previous);
-      Notify('Task toggled locally', 'info');
-      console.warn('Toggle failed', e);
-    }
+    Notify(task && task.completed ? 'Marked as incomplete!' : 'Marked as complete!', 'success');
   }
 
   // LOGIN SCREEN
@@ -434,21 +481,80 @@ function SelectOption() {
       <div className="App-structure">
         <div style={{ padding: '15px 20px', backgroundColor: '#38320d', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0 }}>My Tasks - {currentUser}</h2>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#f8223d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '12px'
-            }}
-          >
-            Logout
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={exportTasksToDevice}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#0ea5a4',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              Save to device
+            </button>
+            <button
+              onClick={importTasksFromDevice}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#f59e0b',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              Load from device
+            </button>
+            <button
+              onClick={() => setShowChangePwd(true)}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#6b7280',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              Change password
+            </button>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#f8223d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
+
+        {showChangePwd && (
+          <div style={{ padding: '12px', background: '#ffffff', borderRadius: '8px', margin: '12px 20px' }}>
+            <h3 style={{ margin: '0 0 10px 0' }}>Change Password</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input type="password" placeholder="Current password" value={oldPasswordInput} onChange={(e) => setOldPasswordInput(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} />
+              <input type="password" placeholder="New password" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} />
+              <input type="password" placeholder="Confirm new password" value={confirmPasswordInput} onChange={(e) => setConfirmPasswordInput(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={changePassword} style={{ padding: '8px 12px', backgroundColor: '#0ea5a4', color: 'white', border: 'none', borderRadius: '6px' }}>Change</button>
+                <button onClick={() => setShowChangePwd(false)} style={{ padding: '8px 12px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '6px' }}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {selectedIndex !== 0 && (
           <div className="options-list">

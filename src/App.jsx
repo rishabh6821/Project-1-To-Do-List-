@@ -41,7 +41,7 @@ function App({
                     <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
                       <input 
                         type="checkbox" 
-                        checked={false}
+                        checked={!!task.completed}
                         onChange={() => toggleCompleteProp && toggleCompleteProp(task.id)} 
                       />
                       <span className={task.completed ? 'task-completed' : ''}>{task.text}</span>

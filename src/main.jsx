@@ -33,10 +33,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <SelectOption />
   </React.StrictMode>,
 );
-
-
-{// BACKEND CONSOLE LOGS FOR DEV PURPOSES
-  console.log("%cChange the full UI of App structure and option buttons like show list customise list, more...","color: white; background-color: black; padding: 10px; font-size: 16px; border-radius: 5px;");
-
-  document.querySelector('ul'); // This will show the ul list in BACKEND CONSOLE
-}
